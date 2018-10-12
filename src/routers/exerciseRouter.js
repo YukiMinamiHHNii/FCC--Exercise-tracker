@@ -1,4 +1,4 @@
-const express = require("Express"),
+const express = require("express"),
 			router = express.Router(),
 			exerciseController= require('../controllers/exerciseController');
 
