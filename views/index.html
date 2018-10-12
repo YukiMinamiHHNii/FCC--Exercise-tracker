@@ -18,24 +18,24 @@
 			</li>
 			<li>I can retrieve a full exercise log of any user by getting /api/exercise/log with a parameter of userId(_id). Return will be the user object with added array log and count (total exercise count).
 			</li>
-			<li>I can retrieve part of the log of any user by also passing along optional parameters of from & to or limit. (Date format yyyy-mm-dd, limit = int)
+			<li>I can retrieve part of the log of any user by also passing along optional parameters of from & to or limit. (Date format yyyy-mm-dd, limit = int, url= /api/exercise/log?{userId}[&from][&to][&limit])
 			</li>
 		</ul>
 		<section id="action">
 			<form class="action-form" method="POST" action="/api/exercise/new-user">
 				<h3 class="header">Create user</h3>
 				<label for="user">Username:</label>
-				<input type="text" name="user">
+				<input type="text" name="user" required>
 				<input type="submit" value="Create">
 			</form>
 			<form class="action-form" method="POST" action="/api/exercise/add">
 				<h3 class="header">Add exercise</h3>
-				<label for="user">Username:</label>
-				<input type="text" name="user">
+				<label for="user">UserID:</label>
+				<input type="text" name="user" required>
 				<label for="desc">Description:</label>
-				<input type="text" name="desc">
+				<input type="text" name="desc" required>
 				<label for="duration">Duration:</label>
-				<input type="number" min="1" name="duration" placeholder="(in minutes)">
+				<input type="number" min="1" name="duration" placeholder="(in minutes)" required>
 				<label for="date">Date:</label>
 				<input type="text" name="date" placeholder="yyyy-mm-dd">
 				<input type="submit" value="Create">
