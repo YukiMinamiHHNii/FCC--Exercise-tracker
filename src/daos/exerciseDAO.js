@@ -3,129 +3,230 @@ const mongoose = require("mongoose"),
 	User = require("../models/userModel"),
 	Exercise = require("../models/exerciseModel");
 
-function handleConnection(connected) {
-	mongoose.connect(
-		process.env.MONGO_DB_CONNECTION,
-		error => {
-			return error ? connected(false, error) : connected(true);
-		}
-	);
+function handleConnection() {
+	return new Promise((resolve, reject) => {
+		mongoose
+			.connect(process.env.MONGO_DB_CONNECTION)
+			.then(() => {
+				resolve();
+			})
+			.catch(err => {
+				reject({ status: "Error while connecting to DB", error: err.message });
+			});
+	});
 }
 
 exports.createUser = (username, result) => {
-	handleConnection((connected, error) => {
-		if (!connected) {
-			return result(error);
-		}
-		let saveUser = new User({
-			_id: getRand(),
-			username: username
+	handleConnection()
+		.then(() => {
+			return checkUsername({ username: username });
+		})
+		.then(() => {
+			return saveUser(username);
+		})
+		.then(data => {
+			return result(data);
+		})
+		.catch(err => {
+			return result(err);
 		});
-		saveUser.save((err, data) => {
-			return err
-				? result(err)
-				: result(null, { _id: data._id, username: data.username });
-		});
-	});
 };
 
+function checkUsername(data) {
+	return new Promise((resolve, reject) => {
+		User.findOne(data)
+			.exec()
+			.then(foundUser => {
+				if (foundUser) {
+					reject({ status: "Username already taken" });
+				} else {
+					resolve();
+				}
+			})
+			.catch(err => {
+				reject({
+					status: "Error while retrieving user info",
+					error: err.message
+				});
+			});
+	});
+}
+
+function saveUser(username) {
+	return new Promise((resolve, reject) => {
+		new User({
+			_id: getRand(),
+			username: username
+		})
+			.save()
+			.then(savedUser => {
+				resolve({ _id: savedUser._id, username: savedUser.username });
+			})
+			.catch(err => {
+				reject({
+					status: "Error while saving user",
+					error: err.message
+				});
+			});
+	});
+}
+
+exports.readAllUsers = result => {
+	handleConnection()
+		.then(() => {
+			return findAllUsers();
+		})
+		.then(data => {
+			return result(data);
+		})
+		.catch(err => {
+			return result(err);
+		});
+};
+
+function findAllUsers() {
+	return new Promise((resolve, reject) => {
+		User.find()
+			.select({ _id: 1, username: 1 })
+			.exec()
+			.then(foundUsers => {
+				resolve(foundUsers);
+			})
+			.catch(err => {
+				reject({
+					status: "Error while retrieving user list",
+					error: err.message
+				});
+			});
+	});
+}
+
 exports.createExercise = (exerciseData, result) => {
-	handleConnection((connected, error) => {
-		if (!connected) {
-			return result(error);
-		}
-
-		User.findById(exerciseData.user, (err, user) => {
-			if (err || !user) {
-				return result("user data not found");
-			}
-
-			let saveExercise = exerciseData.date
-				? new Exercise({
+	handleConnection()
+		.then(() => {
+			return checkUserByID(exerciseData.user);
+		})
+		.then(userData => {
+			let data = exerciseData.date
+				? {
 						description: exerciseData.desc,
 						duration: exerciseData.duration,
 						date: exerciseData.date
-				  })
-				: new Exercise({
+				  }
+				: {
 						description: exerciseData.desc,
 						duration: exerciseData.duration
-				  });
-
-			saveExercise.save((err, exercise) => {
-				if (err) {
-					return result("Error while saving exercise to DB");
-				} else {
-					user.log.push(exercise._id);
-					user.save((err, data) => {
-						return err
-							? result("Error while updating user data")
-							: result(null, {
-									_id: data._id,
-									username: data.username,
-									description: exercise.description,
-									duration: exercise.duration,
-									date: exercise.date
-							  });
-					});
-				}
-			});
+				  };
+			return saveExercise(userData, data);
+		})
+		.then(savedExercise => {
+			return result(savedExercise);
+		})
+		.catch(err => {
+			return result(err);
 		});
-	});
 };
 
-exports.readAllUsers = result => {
-	handleConnection((connected, error) => {
-		if (!connected) {
-			return result(error);
-		}
-		User.find()
-			.select({ _id: 1, username: 1 })
-			.exec((err, data) => {
-				return err ? result(err) : result(null, data);
+function checkUserByID(data) {
+	return new Promise((resolve, reject) => {
+		User.findById(data)
+			.exec()
+			.then(foundUser => {
+				if (foundUser) {
+					resolve(foundUser);
+				} else {
+					reject({ status: "User data not found" });
+				}
+			})
+			.catch(err => {
+				reject({
+					status: "Error while retrieving user info",
+					error: err.message
+				});
 			});
 	});
-};
+}
+
+function saveExercise(userData, exerciseData) {
+	return new Promise((resolve, reject) => {
+		Exercise(exerciseData)
+			.save()
+			.then(savedExercise => {
+				return savedExercise;
+			})
+			.then(exercise => {
+				userData.log.push(exercise._id);
+				userData
+					.save()
+					.then(updatedUser => {
+						resolve({
+							_id: updatedUser._id,
+							username: updatedUser.username,
+							description: exercise.description,
+							duration: exercise.duration,
+							date: exercise.date
+						});
+					})
+					.catch(err => {
+						reject({
+							status: "Error while updating user log",
+							error: err.message
+						});
+					});
+			})
+			.catch(err => {
+				reject({
+					status: "Error while saving new exercise entry",
+					error: err.message
+				});
+			});
+	});
+}
 
 exports.readUserLog = (queryObj, result) => {
-	handleConnection((connected, error) => {
-		if (!connected) {
-			return result(error);
-		}
-		let queryLimit = queryObj.limit ? queryObj.limit : 0;
-		let dates = [
-			queryObj.from ? { date: { $gte: queryObj.from } } : {},
-			queryObj.to ? { date: { $lte: queryObj.to } } : {}
-		];
-		User.findOne({ _id: queryObj.userId })
+	handleConnection()
+		.then(() => {
+			let queryLimit = queryObj.limit ? queryObj.limit : 0;
+			let dates = [
+				queryObj.from ? { date: { $gte: queryObj.from } } : {},
+				queryObj.to ? { date: { $lte: queryObj.to } } : {}
+			];
+			return getExerciseLog(queryObj.userId, queryLimit, dates);
+		})
+		.then(exerciseLog => {
+			return result(exerciseLog);
+		})
+		.catch(err => {
+			return result(err);
+		});
+};
+
+function getExerciseLog(userId, limit, dates) {
+	return new Promise((resolve, reject) => {
+		User.findOne({ _id: userId })
 			.populate({
 				path: "log",
 				match: { $and: dates },
 				select: { description: 1, duration: 1, date: 1, _id: 0 },
-				options: { limit: queryLimit }
+				options: { limit: limit }
 			})
 			.select({ _id: 1, username: 1, log: 1 })
-			.exec((err, data) => {
-				return err
-					? result("Error while retrieving log, are your parameters correct?")
-					: result(null, data);
+			.exec()
+			.then(foundLog => {
+				if (foundLog) {
+					resolve(foundLog);
+				} else {
+					resolve({ status: `Log for ${userId} is empty` });
+				}
+			})
+			.catch(err => {
+				reject({
+					status: "Error while retrieving log, are your parameters correct?",
+					error: err.message
+				});
 			});
 	});
-};
-
-exports.readUserByProperty = (queryObj, result) => {
-	if (Object.keys(queryObj).length === 0) {
-		return result("A non-empty object is needed for searching");
-	} else {
-		handleConnection((connected, error) => {
-			if (!connected) {
-				return result(error);
-			}
-			User.findOne(queryObj, (err, data) => {
-				return err ? result(err) : result(null, data);
-			});
-		});
-	}
-};
+}
 
 function getRand() {
 	let characters =
