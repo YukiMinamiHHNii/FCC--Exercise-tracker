@@ -16,20 +16,22 @@ function handleConnection() {
 	});
 }
 
-exports.createUser = (username, result) => {
-	handleConnection()
-		.then(() => {
-			return checkUsername({ username: username });
-		})
-		.then(() => {
-			return saveUser(username);
-		})
-		.then(data => {
-			return result(data);
-		})
-		.catch(err => {
-			return result(err);
-		});
+exports.createUser = username => {
+	return new Promise((resolve, reject) => {
+		handleConnection()
+			.then(() => {
+				return checkUsername({ username: username });
+			})
+			.then(() => {
+				return saveUser(username);
+			})
+			.then(savedUser => {
+				resolve(savedUser);
+			})
+			.catch(err => {
+				reject(err);
+			});
+	});
 };
 
 function checkUsername(data) {
@@ -71,17 +73,19 @@ function saveUser(username) {
 	});
 }
 
-exports.readAllUsers = result => {
-	handleConnection()
-		.then(() => {
-			return findAllUsers();
-		})
-		.then(data => {
-			return result(data);
-		})
-		.catch(err => {
-			return result(err);
-		});
+exports.readAllUsers = () => {
+	return new Promise((resolve, reject) => {
+		handleConnection()
+			.then(() => {
+				return findAllUsers();
+			})
+			.then(data => {
+				resolve(data);
+			})
+			.catch(err => {
+				reject(err);
+			});
+	});
 };
 
 function findAllUsers() {
@@ -102,29 +106,31 @@ function findAllUsers() {
 }
 
 exports.createExercise = (exerciseData, result) => {
-	handleConnection()
-		.then(() => {
-			return checkUserByID(exerciseData.user);
-		})
-		.then(userData => {
-			let data = exerciseData.date
-				? {
-						description: exerciseData.desc,
-						duration: exerciseData.duration,
-						date: exerciseData.date
-				  }
-				: {
-						description: exerciseData.desc,
-						duration: exerciseData.duration
-				  };
-			return saveExercise(userData, data);
-		})
-		.then(savedExercise => {
-			return result(savedExercise);
-		})
-		.catch(err => {
-			return result(err);
-		});
+	return new Promise((resolve, reject) => {
+		handleConnection()
+			.then(() => {
+				return checkUserByID(exerciseData.user);
+			})
+			.then(userData => {
+				let data = exerciseData.date
+					? {
+							description: exerciseData.desc,
+							duration: exerciseData.duration,
+							date: exerciseData.date
+					  }
+					: {
+							description: exerciseData.desc,
+							duration: exerciseData.duration
+					  };
+				return saveExercise(userData, data);
+			})
+			.then(savedExercise => {
+				resolve(savedExercise);
+			})
+			.catch(err => {
+				reject(err);
+			});
+	});
 };
 
 function checkUserByID(data) {
@@ -183,22 +189,24 @@ function saveExercise(userData, exerciseData) {
 	});
 }
 
-exports.readUserLog = (queryObj, result) => {
-	handleConnection()
-		.then(() => {
-			let queryLimit = queryObj.limit ? queryObj.limit : 0;
-			let dates = [
-				queryObj.from ? { date: { $gte: queryObj.from } } : {},
-				queryObj.to ? { date: { $lte: queryObj.to } } : {}
-			];
-			return getExerciseLog(queryObj.userId, queryLimit, dates);
-		})
-		.then(exerciseLog => {
-			return result(exerciseLog);
-		})
-		.catch(err => {
-			return result(err);
-		});
+exports.readUserLog = queryObj => {
+	return new Promise((resolve, reject) => {
+		handleConnection()
+			.then(() => {
+				let queryLimit = queryObj.limit ? queryObj.limit : 0;
+				let dates = [
+					queryObj.from ? { date: { $gte: queryObj.from } } : {},
+					queryObj.to ? { date: { $lte: queryObj.to } } : {}
+				];
+				return getExerciseLog(queryObj.userId, queryLimit, dates);
+			})
+			.then(exerciseLog => {
+				resolve(exerciseLog);
+			})
+			.catch(err => {
+				reject(err);
+			});
+	});
 };
 
 function getExerciseLog(userId, limit, dates) {
