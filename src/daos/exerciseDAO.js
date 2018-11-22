@@ -155,16 +155,25 @@ function checkUserByID(data) {
 
 function saveExercise(userData, exerciseData) {
 	return new Promise((resolve, reject) => {
-		Exercise(exerciseData)
-			.save()
+		createExerciseEntry(exerciseData)
 			.then(savedExercise => {
-				return savedExercise;
-			})
-			.then(exercise => {
-				return updateUser(userData, exercise);
+				return updateUser(userData, savedExercise);
 			})
 			.then(result => {
 				resolve(result);
+			})
+			.catch(err => {
+				reject(err);
+			});
+	});
+}
+
+function createExerciseEntry(exerciseData) {
+	return new Promise((resolve, reject) => {
+		Exercise(exerciseData)
+			.save()
+			.then(savedExercise => {
+				resolve(savedExercise);
 			})
 			.catch(err => {
 				reject({
