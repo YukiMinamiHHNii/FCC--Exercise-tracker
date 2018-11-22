@@ -161,28 +161,37 @@ function saveExercise(userData, exerciseData) {
 				return savedExercise;
 			})
 			.then(exercise => {
-				userData.log.push(exercise._id);
-				userData
-					.save()
-					.then(updatedUser => {
-						resolve({
-							_id: updatedUser._id,
-							username: updatedUser.username,
-							description: exercise.description,
-							duration: exercise.duration,
-							date: exercise.date
-						});
-					})
-					.catch(err => {
-						reject({
-							status: "Error while updating user log",
-							error: err.message
-						});
-					});
+				return updateUser(userData, exercise);
+			})
+			.then(result => {
+				resolve(result);
 			})
 			.catch(err => {
 				reject({
 					status: "Error while saving new exercise entry",
+					error: err.message
+				});
+			});
+	});
+}
+
+function updateUser(userData, exerciseData) {
+	return new Promise((resolve, reject) => {
+		userData.log.push(exerciseData._id);
+		userData
+			.save()
+			.then(updatedUser => {
+				resolve({
+					_id: updatedUser._id,
+					username: updatedUser.username,
+					description: exerciseData.description,
+					duration: exerciseData.duration,
+					date: exerciseData.date
+				});
+			})
+			.catch(err => {
+				reject({
+					status: "Error while updating user log",
 					error: err.message
 				});
 			});
