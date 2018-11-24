@@ -3,229 +3,199 @@ const mongoose = require("mongoose"),
 	Exercise = require("../models/exerciseModel");
 
 exports.createUser = username => {
-	return new Promise((resolve, reject) => {
-		checkUsername({ username: username })
-			.then(() => {
-				return saveUser(username);
-			})
-			.then(savedUser => {
-				resolve(savedUser);
-			})
-			.catch(err => {
-				reject(err);
-			});
-	});
+	return checkUsername({ username: username })
+		.then(() => {
+			return saveUser(username);
+		})
+		.then(savedUser => {
+			return savedUser;
+		})
+		.catch(err => {
+			return Promise.reject(err);
+		});
 };
 
 function checkUsername(data) {
-	return new Promise((resolve, reject) => {
-		User.findOne(data)
-			.exec()
-			.then(foundUser => {
-				if (foundUser) {
-					reject({ status: "Username already taken" });
-				} else {
-					resolve();
-				}
-			})
-			.catch(err => {
-				reject({
-					status: "Error while retrieving user info",
-					error: err.message
-				});
+	return User.findOne(data)
+		.exec()
+		.then(foundUser => {
+			if (foundUser) {
+				return Promise.reject({ status: "Username already taken" });
+			} else {
+				return;
+			}
+		})
+		.catch(err => {
+			return Promise.reject({
+				status: err.status ? err.status : "Error while retrieving user info",
+				error: err.message
 			});
-	});
+		});
 }
 
 function saveUser(username) {
-	return new Promise((resolve, reject) => {
-		new User({
-			_id: getRand(),
-			username: username
+	return User({
+		_id: getRand(),
+		username: username
+	})
+		.save()
+		.then(savedUser => {
+			return { _id: savedUser._id, username: savedUser.username };
 		})
-			.save()
-			.then(savedUser => {
-				resolve({ _id: savedUser._id, username: savedUser.username });
-			})
-			.catch(err => {
-				reject({
-					status: "Error while saving user",
-					error: err.message
-				});
+		.catch(err => {
+			return Promise.reject({
+				status: "Error while saving user",
+				error: err.message
 			});
-	});
+		});
 }
 
 exports.readAllUsers = () => {
-	return new Promise((resolve, reject) => {
-		findAllUsers()
-			.then(data => {
-				resolve(data);
-			})
-			.catch(err => {
-				reject(err);
-			});
-	});
+	return findAllUsers()
+		.then(data => {
+			return data;
+		})
+		.catch(err => {
+			return Promise.reject(err);
+		});
 };
 
 function findAllUsers() {
-	return new Promise((resolve, reject) => {
-		User.find()
-			.select({ _id: 1, username: 1 })
-			.exec()
-			.then(foundUsers => {
-				resolve(foundUsers);
-			})
-			.catch(err => {
-				reject({
-					status: "Error while retrieving user list",
-					error: err.message
-				});
+	return User.find()
+		.select({ _id: 1, username: 1 })
+		.exec()
+		.then(foundUsers => {
+			return foundUsers;
+		})
+		.catch(err => {
+			return Promise.reject({
+				status: "Error while retrieving user list",
+				error: err.message
 			});
-	});
+		});
 }
 
 exports.createExercise = (exerciseData, result) => {
-	return new Promise((resolve, reject) => {
-		checkUserByID(exerciseData.user)
-			.then(userData => {
-				let data = exerciseData.date
-					? {
-							description: exerciseData.desc,
-							duration: exerciseData.duration,
-							date: exerciseData.date
-					  }
-					: {
-							description: exerciseData.desc,
-							duration: exerciseData.duration
-					  };
-				return saveExercise(userData, data);
-			})
-			.then(savedExercise => {
-				resolve(savedExercise);
-			})
-			.catch(err => {
-				reject(err);
-			});
-	});
+	let user;
+	return checkUserByID(exerciseData.user)
+		.then(userData => {
+			let data = exerciseData.date
+				? {
+						description: exerciseData.desc,
+						duration: exerciseData.duration,
+						date: exerciseData.date
+				  }
+				: {
+						description: exerciseData.desc,
+						duration: exerciseData.duration
+				  };
+			user = userData;
+			return saveExercise(data);
+		})
+		.then(savedExercise => {
+			return updateUser(user, savedExercise);
+		})
+		.then(result => {
+			return result;
+		})
+		.catch(err => {
+			return Promise.reject(err);
+		});
 };
 
 function checkUserByID(data) {
-	return new Promise((resolve, reject) => {
-		User.findById(data)
-			.exec()
-			.then(foundUser => {
-				if (foundUser) {
-					resolve(foundUser);
-				} else {
-					reject({ status: "User data not found" });
-				}
-			})
-			.catch(err => {
-				reject({
-					status: "Error while retrieving user info",
-					error: err.message
-				});
+	return User.findById(data)
+		.exec()
+		.then(foundUser => {
+			if (foundUser) {
+				return foundUser;
+			} else {
+				return Promise.reject({ status: "User data not found" });
+			}
+		})
+		.catch(err => {
+			return Promise.reject({
+				status: err.status ? err.status : "Error while retrieving user info",
+				error: err.message
 			});
-	});
+		});
 }
 
-function saveExercise(userData, exerciseData) {
-	return new Promise((resolve, reject) => {
-		createExerciseEntry(exerciseData)
-			.then(savedExercise => {
-				return updateUser(userData, savedExercise);
-			})
-			.then(result => {
-				resolve(result);
-			})
-			.catch(err => {
-				reject(err);
+function saveExercise(exerciseData) {
+	return Exercise(exerciseData)
+		.save()
+		.then(result => {
+			return result;
+		})
+		.catch(err => {
+			return Promise.reject({
+				status: "Error while saving new exercise entry",
+				error: err.message
 			});
-	});
-}
-
-function createExerciseEntry(exerciseData) {
-	return new Promise((resolve, reject) => {
-		Exercise(exerciseData)
-			.save()
-			.then(savedExercise => {
-				resolve(savedExercise);
-			})
-			.catch(err => {
-				reject({
-					status: "Error while saving new exercise entry",
-					error: err.message
-				});
-			});
-	});
+		});
 }
 
 function updateUser(userData, exerciseData) {
-	return new Promise((resolve, reject) => {
-		userData.log.push(exerciseData._id);
-		userData
-			.save()
-			.then(updatedUser => {
-				resolve({
-					_id: updatedUser._id,
-					username: updatedUser.username,
-					description: exerciseData.description,
-					duration: exerciseData.duration,
-					date: exerciseData.date
-				});
-			})
-			.catch(err => {
-				reject({
-					status: "Error while updating user log",
-					error: err.message
-				});
+	userData.log.push(exerciseData._id);
+	return userData
+		.save()
+		.then(updatedUser => {
+			return {
+				_id: updatedUser._id,
+				username: updatedUser.username,
+				description: exerciseData.description,
+				duration: exerciseData.duration,
+				date: exerciseData.date
+			};
+		})
+		.catch(err => {
+			return Promise.reject({
+				status: "Error while updating user log",
+				error: err.message
 			});
-	});
+		});
 }
 
 exports.readUserLog = queryObj => {
-	return new Promise((resolve, reject) => {
-		let queryLimit = queryObj.limit ? queryObj.limit : 0;
-		let dates = [
-			queryObj.from ? { date: { $gte: queryObj.from } } : {},
-			queryObj.to ? { date: { $lte: queryObj.to } } : {}
-		];
-		getExerciseLog(queryObj.userId, queryLimit, dates)
-			.then(exerciseLog => {
-				resolve(exerciseLog);
-			})
-			.catch(err => {
-				reject(err);
-			});
-	});
+	let queryLimit = queryObj.limit ? queryObj.limit : 0;
+	let dates = [
+		queryObj.from ? { date: { $gte: queryObj.from } } : {},
+		queryObj.to ? { date: { $lte: queryObj.to } } : {}
+	];
+	return getExerciseLog(queryObj.userId, queryLimit, dates)
+		.then(exerciseLog => {
+			return exerciseLog;
+		})
+		.catch(err => {
+			return Promise.reject(err);
+		});
 };
 
 function getExerciseLog(userId, limit, dates) {
-	return new Promise((resolve, reject) => {
-		User.findOne({ _id: userId })
-			.populate({
-				path: "log",
-				match: { $and: dates },
-				select: { description: 1, duration: 1, date: 1, _id: 0 },
-				options: { limit: limit }
-			})
-			.select({ _id: 1, username: 1, log: 1 })
-			.exec()
-			.then(foundLog => {
-				if (foundLog) {
-					resolve(foundLog);
-				} else {
-					resolve({ status: `Log for ${userId} is empty` });
-				}
-			})
-			.catch(err => {
-				reject({
-					status: "Error while retrieving log, are your parameters correct?",
-					error: err.message
-				});
+	return User.findOne({ _id: userId })
+		.populate({
+			path: "log",
+			match: { $and: dates },
+			select: { description: 1, duration: 1, date: 1, _id: 0 },
+			options: { limit: limit }
+		})
+		.select({ _id: 1, username: 1, log: 1 })
+		.exec()
+		.then(foundLog => {
+			if (foundLog) {
+				return foundLog;
+			} else {
+				return Promise.resolve({ status: `Log for ${userId} is empty` });
+			}
+		})
+		.catch(err => {
+			return Promise.reject({
+				status: err.status
+					? err.status
+					: "Error while retrieving log... are your parameters correct?",
+				error: err.message
 			});
-	});
+		});
 }
 
 function getRand() {
