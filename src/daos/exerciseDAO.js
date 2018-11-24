@@ -1,5 +1,4 @@
 const mongoose = require("mongoose"),
-	dotenv = require("dotenv").load(),
 	User = require("../models/userModel"),
 	Exercise = require("../models/exerciseModel");
 
