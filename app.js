@@ -1,9 +1,12 @@
 const express = require("express"),
 			dotenv = require("dotenv").load(),
 			bodyParser = require("body-parser"),
+			connection= require("./src/utils/connection"),
 			exerciseRouter = require("./src/routers/exerciseRouter");
 
 const app = express();
+
+connection.handleConnection();
 
 app.use(express.static(__dirname + "/public"));
 app.use(bodyParser.urlencoded({ extended: true }));

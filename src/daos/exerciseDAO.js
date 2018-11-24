@@ -3,25 +3,9 @@ const mongoose = require("mongoose"),
 	User = require("../models/userModel"),
 	Exercise = require("../models/exerciseModel");
 
-function handleConnection() {
-	return new Promise((resolve, reject) => {
-		mongoose
-			.connect(process.env.MONGO_DB_CONNECTION)
-			.then(() => {
-				resolve();
-			})
-			.catch(err => {
-				reject({ status: "Error while connecting to DB", error: err.message });
-			});
-	});
-}
-
 exports.createUser = username => {
 	return new Promise((resolve, reject) => {
-		handleConnection()
-			.then(() => {
-				return checkUsername({ username: username });
-			})
+		checkUsername({ username: username })
 			.then(() => {
 				return saveUser(username);
 			})
@@ -75,10 +59,7 @@ function saveUser(username) {
 
 exports.readAllUsers = () => {
 	return new Promise((resolve, reject) => {
-		handleConnection()
-			.then(() => {
-				return findAllUsers();
-			})
+		findAllUsers()
 			.then(data => {
 				resolve(data);
 			})
@@ -107,10 +88,7 @@ function findAllUsers() {
 
 exports.createExercise = (exerciseData, result) => {
 	return new Promise((resolve, reject) => {
-		handleConnection()
-			.then(() => {
-				return checkUserByID(exerciseData.user);
-			})
+		checkUserByID(exerciseData.user)
 			.then(userData => {
 				let data = exerciseData.date
 					? {
@@ -209,15 +187,12 @@ function updateUser(userData, exerciseData) {
 
 exports.readUserLog = queryObj => {
 	return new Promise((resolve, reject) => {
-		handleConnection()
-			.then(() => {
-				let queryLimit = queryObj.limit ? queryObj.limit : 0;
-				let dates = [
-					queryObj.from ? { date: { $gte: queryObj.from } } : {},
-					queryObj.to ? { date: { $lte: queryObj.to } } : {}
-				];
-				return getExerciseLog(queryObj.userId, queryLimit, dates);
-			})
+		let queryLimit = queryObj.limit ? queryObj.limit : 0;
+		let dates = [
+			queryObj.from ? { date: { $gte: queryObj.from } } : {},
+			queryObj.to ? { date: { $lte: queryObj.to } } : {}
+		];
+		getExerciseLog(queryObj.userId, queryLimit, dates)
 			.then(exerciseLog => {
 				resolve(exerciseLog);
 			})
