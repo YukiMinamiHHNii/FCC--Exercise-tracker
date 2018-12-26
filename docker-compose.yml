@@ -15,7 +15,7 @@ services:
     depends_on:
       - mongodb
     ports:
-      - 3002:3000
+      - 3001:3000
 volumes:
   db-data:
     driver: local
