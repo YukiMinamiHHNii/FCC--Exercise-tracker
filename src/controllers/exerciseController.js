@@ -2,7 +2,7 @@ const exerciseDAO = require("../daos/exerciseDAO");
 
 exports.newUser = (req, res) => {
 	exerciseDAO
-		.createUser(req.body.user)
+		.createUser(req.body.username)
 		.then(result => {
 			return res.json(result);
 		})

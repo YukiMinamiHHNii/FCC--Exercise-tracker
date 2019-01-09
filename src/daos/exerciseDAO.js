@@ -77,7 +77,7 @@ function findAllUsers() {
 
 exports.createExercise = (exerciseData, result) => {
 	let user;
-	return checkUserByID(exerciseData.user)
+	return checkUserByID(exerciseData.userId)
 		.then(userData => {
 			let data = exerciseData.date
 				? {
