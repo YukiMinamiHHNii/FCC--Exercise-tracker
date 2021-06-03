@@ -1,13 +1,13 @@
 const express = require("express"),
-			dotenv = require("dotenv").load(),
-			bodyParser = require("body-parser"),
-			cors= require("cors"),
-			connection= require("./src/utils/connection"),
-			exerciseRouter = require("./src/routers/exerciseRouter");
+	dotenv = require("dotenv").load(),
+	bodyParser = require("body-parser"),
+	cors = require("cors"),
+	{ Connection } = require("./src/utils/connection"),
+	exerciseRouter = require("./src/routers/exerciseRouter");
 
 const app = express();
 
-connection.handleConnection();
+Connection.handleConnection();
 
 app.use(cors());
 

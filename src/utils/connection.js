@@ -1,25 +1,22 @@
-const mongoose = require("mongoose"),
+const MongoClient = require("mongodb").MongoClient,
 	dotenv = require("dotenv");
 
-exports.handleConnection = () => {
-	mongoose.connect(
-		process.env.MONGO_DB_CONNECTION,
-		{ useNewUrlParser: true }
-	);
-
-	mongoose.connection.on("connected", () => {
-		console.log("App successfully connected to DB");
-	});
-
-	mongoose.connection.on("error", err => {
-		console.log(
-			`Error while connecting to DB... aborting application. \nCaused by: ${err}`
+class Connection {
+	static handleConnection() {
+		if (this.client) return this.client;
+		MongoClient.connect(process.env.MONGO_DB_CONNECTION, this.options).then(
+			(connection) => {
+				console.log("Connected to db");
+				this.client = connection;
+			}
 		);
-		process.exit(1);
-	});
+	}
+}
 
-	mongoose.connection.on("disconnected", () => {
-		console.log("App has been disconnected from DB");
-		process.exit();
-	});
+Connection.client = null;
+Connection.options = {
+	useNewUrlParser: true,
+	useUnifiedTopology: true,
 };
+
+module.exports = { Connection };

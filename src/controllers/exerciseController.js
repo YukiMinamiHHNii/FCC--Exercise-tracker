@@ -14,10 +14,10 @@ exports.newUser = (req, res) => {
 exports.getUsers = (req, res) => {
 	exerciseDAO
 		.readAllUsers()
-		.then(result => {
+		.then((result) => {
 			return res.json(result);
 		})
-		.catch(err => {
+		.catch((err) => {
 			return res.json(err);
 		});
 };
