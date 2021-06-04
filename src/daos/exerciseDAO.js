@@ -129,13 +129,12 @@ function updateUser(userData, exerciseData) {
 	return Connection.client
 		.db()
 		.collection("exercises")
-		.findOneAndUpdate(
-			{ _id: userData._id },
-			{ $push: { log: exerciseData } },
-			{ returnNewDocument: true }
-		)
+		.findOneAndUpdate({ _id: userData._id }, { $push: { log: exerciseData } })
 		.then((updatedUser) => {
-			return updatedUser.value;
+			return checkUserByUsername(updatedUser.value.username);
+		})
+		.then((foundUser) => {
+			return foundUser;
 		})
 		.catch((err) => {
 			return Promise.reject({
