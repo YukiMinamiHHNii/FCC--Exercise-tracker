@@ -1,5 +1,6 @@
 const MongoClient = require("mongodb").MongoClient,
-	dotenv = require("dotenv");
+	dotenv = require("dotenv"),
+	exerciseDAO = require("../daos/exerciseDAO");
 
 class Connection {
 	static handleConnection() {
@@ -10,23 +11,10 @@ class Connection {
 				this.client = connection;
 			})
 			.then(() => {
-				this.client
-					.db()
-					.collection("exercises")
-					.watch()
-					.on("change", (next) => {
-						switch (next.operationType) {
-							case "insert":
-							case "replace":
-								console.log(next.fullDocument);
-								break;
-							case "update":
-								console.log(next.updateDescription.updatedFields);
-								break;
-							case "delete":
-								console.log(next.documentkey);
-						}
-					});
+				exerciseDAO.initObservers(this.client);
+			})
+			.catch((error) => {
+				console.log(`Error while creating connection ${error}`);
 			});
 	}
 }
