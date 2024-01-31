@@ -1,5 +1,4 @@
-const { Connection } = require("../utils/connection"),
-	{ Socket } = require("../utils/socket");
+const { Connection } = require("../utils/connection");
 
 exports.createUser = (username) => {
 	return checkUsername({ username })
@@ -201,26 +200,3 @@ function getExerciseLog(username, dates) {
 			});
 		});
 }
-
-exports.initObservers = (client) => {
-	return client
-		.db()
-		.collection("exercises")
-		.watch()
-		.on("change", (next) => {
-			switch (next.operationType) {
-				case "insert":
-				case "replace":
-					console.log(next.fullDocument);
-					Socket.io.of("/api/socket").emit("log", next.fullDocument);
-					break;
-				case "update":
-					console.log(next.updateDescription.updatedFields);
-					Socket.io.of("/api/socket").emit("log", next.updateDescription.updatedFields);
-					break;
-				case "delete":
-					console.log(next.documentkey);
-					Socket.io.of("/api/socket").emit("log", next.documentkey);
-			}
-		});
-};
